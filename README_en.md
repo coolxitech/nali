@@ -24,7 +24,7 @@
 ## Feature
 
 - Multi database support
-  - Chunzhen qqip database
+  - Chunzhen CZDB IPv4 / IPv6 database
   - ZX ipv6 database
   - ip2region IPv4 / IPv6 database
   - IPinfo Lite database
@@ -74,6 +74,8 @@ $ sudo apt install ./nali_*_amd64.deb
 ```
 
 ## Usage
+
+Before the first query with the Chunzhen CZDB database (the default IPv4 database) you need to fill in `key:` in the `czdb` entry of the config file (or set the `CZDB_KEY` environment variable), see [Use the Chunzhen CZDB database](#use-the-chunzhen-czdb-database).
 
 ### Query a simple IP address
 
@@ -208,7 +210,8 @@ Configuration files written by older versions keep working: databases missing fr
 
 | Database | Name / aliases | Query type | Default file | Auto download |
 | --- | --- | --- | --- | --- |
-| Chunzhen IPv4 | `qqwry`, `chunzhen` | IPv4 (default) | `qqwry.dat` | ✓ |
+| Chunzhen CZDB IPv4 | `czdb`, `chunzhen`, `cz88` | IPv4 (default) | `ipv4.czdb` | ✓ (needs the dedicated link or CZDB_DOWNLOAD_KEY) |
+| Chunzhen CZDB IPv6 | `czdb-ipv6`, `cz88-ipv6` | IPv6 | `ipv6.czdb` | ✓ (needs the dedicated link or CZDB_DOWNLOAD_KEY) |
 | ZX IPv6 | `zxipv6wry`, `zxipv6`, `zx` | IPv6 (default) | `zxipv6wry.db` | ✓ |
 | ip2region IPv4 | `ip2region`, `i2r` | IPv4 | `ip2region.xdb` | ✓ |
 | ip2region IPv6 | `ip2region-ipv6`, `i2r-ipv6` | IPv6 | `ip2region_v6.xdb` | ✓ |
@@ -220,6 +223,64 @@ Configuration files written by older versions keep working: databases missing fr
 | CDN | `cdn` | domain (default) | `cdn.yml` | ✓ |
 
 Databases with automatic download are fetched on first use when the file is missing. For the others, put the file in the data directory shown by `nali info`, or set an absolute `file` path in the config.
+
+### Use the Chunzhen CZDB database
+
+Chunzhen no longer maintains the old `qqwry.dat`, so nali uses the official CZDB format instead; `czdb` is the default IPv4 database (file `ipv4.czdb`, aliases `chunzhen` and `cz88`).
+
+The keys come from the Chunzhen community edition authorization page <https://www.cz88.net/geo-public> (login and application required). The two keys it provides serve different purposes and are not interchangeable:
+
+- `CZDB_DOWNLOAD_KEY`: download authorization key, only used to download database files from the official Chunzhen endpoint;
+- `CZDB_KEY`: decryption key, used to decrypt the local `.czdb` file and required for queries.
+
+Config files written by older versions are migrated on startup: entries with `format: qqwry` are dropped and `qqwry`/`chunzhen` in `selected.ipv4` become `czdb`, while the other entries and custom download URLs stay untouched; the built-in czdb definition (name `czdb`, aliases `chunzhen`/`cz88`, file `ipv4.czdb`, official download URL) is also written into the `databases` list — the dropped qqwry entry is replaced by czdb in place, and when the config has no czdb entry yet (for example after the migration of an earlier version) the czdb entry is prepended, so `nali info` lists it. An existing czdb entry is never duplicated or overwritten, so your custom settings are kept. The migration rewrites `config.yaml`, so comments in it may be lost; the old `qqwry.dat` is not removed automatically, delete it manually. `NALI_DB_IP4=qqwry` no longer works and fails with an error, use `czdb` instead.
+
+The recommended way is to put the key directly into the database entry of the config file: edit `config.yaml` in the directory shown by `nali info` and turn the `czdb` entry into the following (replace both placeholders with the keys from the Chunzhen authorization page):
+
+```yaml
+- name: czdb
+  name-alias: [chunzhen, cz88]
+  format: czdb
+  file: ipv4.czdb
+  zip-entry: cz88_public_v4.czdb
+  key: "<base64 key>"
+  languages: [zh-CN]
+  types: [IPv4]
+  download-urls:
+  - https://www.cz88.net/api/communityIpAuthorization/communityIpDbFile?fn=czdb&key=<download authorization key>
+```
+
+`key:` holds the decryption key, and `download-urls` may point directly at the dedicated download link Chunzhen provides (the link already contains the download authorization key), so neither queries nor automatic updates through `nali update` need any environment variable.
+
+Note that the keys are stored in plain text in `config.yaml`, so do not commit that file to a repository or share it with others (it lives in the directory shown by `nali info`, not in the repository).
+
+As an alternative (useful for CI or temporary use), the decryption key can be provided with the `CZDB_KEY` environment variable (the alias `NALI_CZDB_KEY` works as well); `key:` in the config file takes precedence over the environment variable:
+
+```
+export CZDB_KEY="<base64 key>"   # Linux / macOS
+
+set CZDB_KEY=<base64 key>        # Windows cmd
+
+$env:CZDB_KEY="<base64 key>"     # Windows PowerShell
+```
+
+Automatic download additionally needs a download authorization key. When the link in `download-urls` already carries it (as in the example above) nothing else is required; otherwise the link may keep the `{key}` placeholder and the key is taken from the `CZDB_DOWNLOAD_KEY` environment variable (the alias `NALI_CZDB_DOWNLOAD_KEY` works as well). Without either of them nothing is downloaded, so put `ipv4.czdb` in the data directory shown by `nali info`, or set an absolute `file` path in the config.
+
+Minimal setup for a fresh install:
+
+1. Fill in `key:` in the `czdb` entry of the config file first (or set the `CZDB_KEY` environment variable). Without it every IPv4 query exits with `Database init failed: 未配置 czdb 解密密钥`.
+2. Put the dedicated download link provided by Chunzhen into `download-urls` if automatic downloads are wanted (or set the `CZDB_DOWNLOAD_KEY` environment variable); otherwise place `ipv4.czdb` manually as described above.
+
+If you do not want to apply for Chunzhen authorization, use another database instead, for example by switching with environment variables:
+
+```
+$ NALI_DB_IP4=ip2region nali 8.8.8.8
+$ NALI_DB_IP4=ipinfo nali 8.8.8.8
+```
+
+To use it permanently, set `selected.ipv4` to `ip2region` or `ipinfo` in the config file.
+
+The optional IPv6 database `czdb-ipv6` (`ipv6.czdb`) works the same way and is selected with `NALI_DB_IP6=czdb-ipv6 nali 240e::1` or `selected.ipv6`; the default IPv6 database is still `zxipv6wry`.
 
 ### Use IPinfo Lite
 
@@ -290,21 +351,23 @@ Use "nali [command] --help" for more information about a command.
 
 ### Update database
 
-Without arguments, `nali update` updates the Chunzhen, ZX IPv6, ip2region (IPv4) and CDN databases. The larger optional databases `ip2region-ipv6` (~37 MB) and `ipinfo` (~24 MB) are only updated when they are selected (config `selected` or the `NALI_DB_*` environment variables) or already downloaded.
+Without arguments, `nali update` updates the Chunzhen CZDB, ZX IPv6, ip2region (IPv4) and CDN databases. The larger optional databases `czdb-ipv6`, `ip2region-ipv6` (~37 MB) and `ipinfo` (~24 MB) are only updated when they are selected (config `selected` or the `NALI_DB_*` environment variables) or already downloaded.
 
 ```
 $ nali update
-2026/09/30 09:51:48 正在下载最新 qqwry 数据库...
-2026/09/30 09:51:49 qqwry 数据库下载成功: qqwry.dat
+2026/09/30 09:51:48 正在下载最新 czdb 数据库...
+2026/09/30 09:51:49 czdb 数据库下载成功: ipv4.czdb
 2026/09/30 09:51:49 正在下载最新 cdn 数据库...
 2026/09/30 09:51:50 cdn 数据库下载成功: cdn.yml
 ...
 ```
 
+The czdb download URL contains a `{key}` placeholder that is replaced with the `CZDB_DOWNLOAD_KEY` environment variable; when the `download-urls` in the config already contain the dedicated download link provided by Chunzhen, that variable is not needed (see [Use the Chunzhen CZDB database](#use-the-chunzhen-czdb-database)).
+
 Update specific databases (comma separated, aliases allowed); these are always updated:
 
 ```
-$ nali update --db qqwry,cdn,ipinfo
+$ nali update --db czdb,cdn,ipinfo
 ```
 
 When the download is identical to the local database it is not written again and nali reports it as up to date. Downloads are validated before they replace the local file, so a failed or invalid download keeps the existing database. Add `-v` to also update nali itself to the latest version.
@@ -318,7 +381,7 @@ Users can specify which database to use by setting the environment variables `NA
 Separate database names with commas; each database's result is shown in its own brackets:
 
 ```
-$ NALI_DB_IP4=qqwry,ipinfo nali 8.8.8.8
+$ NALI_DB_IP4=czdb,ipinfo nali 8.8.8.8
 8.8.8.8 [美国–加利福尼亚州–圣克拉拉–山景城 谷歌公司DNS服务器] [United States AS15169 Google LLC]
 ```
 
@@ -393,7 +456,7 @@ Colors are only used when writing to a terminal by default. Use `--color always`
 
 ### Garbled Chinese text on Windows
 
-On Simplified Chinese Windows (code page 936), input that is not valid UTF-8 is decoded as GBK automatically, so the output of `tracert`, `nslookup` and similar tools can be piped into nali directly. If text is still garbled, pass `--gbk` to always decode input as GBK.
+On Simplified Chinese Windows (code page 936), input that is not valid UTF-8 is decoded as GBK automatically, so the output of `tracert`, `nslookup` and similar tools can be piped into nali directly. In a Windows console (terminal) nali switches the console code page to UTF-8 (65001) and restores it on exit, error exits included, so Chinese output is no longer garbled; environments that already use UTF-8, such as Windows Terminal, are left as they are. Automatic GBK/GB18030 decoding of input is unchanged. If text is still garbled, pass `--gbk` to always decode input as GBK.
 
 ### `tail -f log | jq . | nali` holds back the last lines
 
@@ -430,7 +493,7 @@ cd testdata/mmdb/generate && go run .
 ## Thanks
 
 - [纯真QQIP离线数据库](http://www.cz88.net)
-- [qqwry纯真数据库解析](https://github.com/yinheli/qqwry)
+- [纯真 CZDB 数据库解析](https://github.com/tagphi/czdb-search-golang)
 - [ZX公网ipv6数据库](https://ip.zxinc.org/ipquery/)
 - [Geoip2 city数据库](https://www.maxmind.com/en/geoip2-precision-city-service)
 - [geoip2-golang解析器](https://github.com/oschwald/geoip2-golang)

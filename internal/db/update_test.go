@@ -7,11 +7,14 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/spf13/viper"
+
+	"github.com/zu1k/nali/pkg/czdb"
 )
 
 // formatRaw has no DbCheckFunc, so any downloaded content is accepted.
@@ -94,7 +97,7 @@ func TestUpdateDBDefaultListSkipsUnusedOptionalDBs(t *testing.T) {
 	srv := newFakeServer(t, func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte(r.URL.Path)) })
 	dir := t.TempDir()
 	mockAllUpdatableDBs(t, srv.URL, dir)
-	withViper(t, map[string]string{"selected.ipv4": "qqwry", "selected.ipv6": "zxipv6wry", "selected.cdn": "cdn"})
+	withViper(t, map[string]string{"selected.ipv4": "czdb", "selected.ipv6": "zxipv6wry", "selected.cdn": "cdn"})
 
 	UpdateDB()
 
@@ -131,7 +134,7 @@ func TestUpdateDBDefaultListIncludesDownloadedOptionalDB(t *testing.T) {
 	srv := newFakeServer(t, func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("new")) })
 	dir := t.TempDir()
 	mockAllUpdatableDBs(t, srv.URL, dir)
-	withViper(t, map[string]string{"selected.ipv4": "qqwry", "selected.ipv6": "zxipv6wry", "selected.cdn": "cdn"})
+	withViper(t, map[string]string{"selected.ipv4": "czdb", "selected.ipv6": "zxipv6wry", "selected.cdn": "cdn"})
 	if err := os.WriteFile(filepath.Join(dir, "ip2region-ipv6"), []byte("old"), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +184,7 @@ func TestUpdateDBKeepsExistingFileOnInvalidDownload(t *testing.T) {
 		_, _ = w.Write([]byte("<html>rate limited</html>"))
 	})
 	dir := t.TempDir()
-	for _, format := range []Format{FormatMMDB, FormatQQWry, FormatZXIPv6Wry, FormatIP2Region, FormatCDNYml} {
+	for _, format := range []Format{FormatMMDB, FormatCZDB, FormatZXIPv6Wry, FormatIP2Region, FormatCDNYml} {
 		t.Run(string(format), func(t *testing.T) {
 			file := filepath.Join(dir, string(format))
 			if err := os.WriteFile(file, []byte("good"), 0644); err != nil {
@@ -219,6 +222,38 @@ func TestUpdateDBKeepsExistingFileOnHTTPError(t *testing.T) {
 	}
 }
 
+// czdb downloads a zip archive from the official endpoint, which reports a
+// missing or invalid authorization key as an HTTP 200 JSON body. That message
+// must reach the user and the existing database must survive.
+func TestUpdateCZDBSurfacesAPIMessage(t *testing.T) {
+	srv := newFakeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"code":5101,"success":false,"message":"非法访问"}`))
+	})
+	file := filepath.Join(t.TempDir(), "ipv4.czdb")
+	if err := os.WriteFile(file, []byte("good"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	withNameDBMap(t, &DB{
+		Name: "czdb", Format: FormatCZDB, File: file,
+		ZipEntry: czdb.EntryIPv4, DownloadUrls: []string{srv.URL + "/czdb"},
+	})
+
+	update, name := getUpdateFuncByName("czdb")
+	if name != "czdb" {
+		t.Fatalf("unexpected update name %q", name)
+	}
+	err := update()
+	if err == nil {
+		t.Fatal("an API error body should fail the update")
+	}
+	if !strings.Contains(err.Error(), "非法访问") {
+		t.Fatalf("error should carry the API message, got %v", err)
+	}
+	if data, _ := os.ReadFile(file); string(data) != "good" {
+		t.Fatalf("existing database was overwritten with %q", data)
+	}
+}
+
 func TestUpdateListsResolveToDefaultDBs(t *testing.T) {
 	withNameDBMap(t)
 	for _, name := range append(append([]string{}, DbNameListForUpdate...), DbNameListForUpdateIfUsed...) {
@@ -243,9 +278,29 @@ func TestDefaultDBList(t *testing.T) {
 		t.Fatalf("incorrect ip2region-ipv6 defaults: %+v", v6)
 	}
 
-	for alias, name := range map[string]string{"chunzhen": "qqwry", "zx": "zxipv6wry", "geolite2": "geoip", "db-ip": "dbip", "i2r": "ip2region"} {
+	for alias, name := range map[string]string{
+		"chunzhen": "czdb", "cz88": "czdb",
+		"cz88-ipv6": "czdb-ipv6",
+		"zx":        "zxipv6wry", "geolite2": "geoip", "db-ip": "dbip", "i2r": "ip2region",
+	} {
 		if db := defaults[alias]; db == nil || db.Name != name {
 			t.Errorf("alias %s should resolve to %s", alias, name)
+		}
+	}
+
+	for name, want := range map[string]struct {
+		file  string
+		entry string
+	}{
+		"czdb":      {file: "ipv4.czdb", entry: czdb.EntryIPv4},
+		"czdb-ipv6": {file: "ipv6.czdb", entry: czdb.EntryIPv6},
+	} {
+		db := defaults[name]
+		if db == nil || db.Format != FormatCZDB || db.File != want.file || db.ZipEntry != want.entry {
+			t.Fatalf("incorrect %s defaults: %+v", name, db)
+		}
+		if len(db.DownloadUrls) != 1 || db.DownloadUrls[0] != czdb.DownloadUrl {
+			t.Fatalf("%s should download from the official czdb endpoint: %v", name, db.DownloadUrls)
 		}
 	}
 

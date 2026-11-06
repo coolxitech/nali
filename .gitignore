@@ -24,3 +24,4 @@ vendor
 nali
 .openbitfun/
 /.openbitfun/search/flashgrep-index/
+.env

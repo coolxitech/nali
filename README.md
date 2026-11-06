@@ -24,7 +24,7 @@
 ## 功能
 
 - 支持多种数据库
-  - 纯真 IPv4 离线数据库
+  - 纯真 CZDB IPv4 / IPv6 离线数据库
   - ZX IPv6 离线数据库
   - ip2region IPv4 / IPv6 数据库 (可选)
   - IPinfo Lite 数据库 (可选)
@@ -74,6 +74,8 @@ $ sudo apt install ./nali_*_amd64.deb
 ```
 
 ## 使用说明
+
+首次使用纯真 CZDB 库（默认 IPv4 数据库）前，需要在配置文件的 `czdb` 条目里填好 `key:`（或设置环境变量 `CZDB_KEY`），详见[使用纯真 CZDB 库](#使用纯真-czdb-库)。
 
 ### 查询一个IP的地理信息
 
@@ -216,7 +218,8 @@ Address: 2001:428:6402:21b::6 [美国Louisiana州Monroe Qwest Communications Com
 
 | 数据库 | 名称 / 别名 | 查询类型 | 默认文件 | 自动下载 |
 | --- | --- | --- | --- | --- |
-| 纯真 IPv4 | `qqwry`, `chunzhen` | IPv4（默认） | `qqwry.dat` | ✓ |
+| 纯真 CZDB IPv4 | `czdb`, `chunzhen`, `cz88` | IPv4（默认） | `ipv4.czdb` | ✓（需专属下载链接或 CZDB_DOWNLOAD_KEY） |
+| 纯真 CZDB IPv6 | `czdb-ipv6`, `cz88-ipv6` | IPv6 | `ipv6.czdb` | ✓（需专属下载链接或 CZDB_DOWNLOAD_KEY） |
 | ZX IPv6 | `zxipv6wry`, `zxipv6`, `zx` | IPv6（默认） | `zxipv6wry.db` | ✓ |
 | ip2region IPv4 | `ip2region`, `i2r` | IPv4 | `ip2region.xdb` | ✓ |
 | ip2region IPv6 | `ip2region-ipv6`, `i2r-ipv6` | IPv6 | `ip2region_v6.xdb` | ✓ |
@@ -228,6 +231,64 @@ Address: 2001:428:6402:21b::6 [美国Louisiana州Monroe Qwest Communications Com
 | CDN | `cdn` | 域名（默认） | `cdn.yml` | ✓ |
 
 支持自动下载的数据库在首次使用、本地文件不存在时会自动下载；需手动下载的数据库请将文件放入 `nali info` 显示的数据目录，或在配置文件中用绝对路径指定 `file`。
+
+### 使用纯真 CZDB 库
+
+纯真已经停止维护旧的 `qqwry.dat`，nali 改用纯真官方新版 CZDB 格式，默认的 IPv4 数据库是 `czdb`（文件 `ipv4.czdb`，别名 `chunzhen`、`cz88`）。
+
+密钥来自纯真社区版授权页 <https://www.cz88.net/geo-public>（需登录并申请）。该页面提供的两个密钥用途不同，不能混用：
+
+- `CZDB_DOWNLOAD_KEY`：下载授权密钥，只用于从纯真官方接口下载数据库文件；
+- `CZDB_KEY`：解密密钥，用于解密本地的 `.czdb` 文件，查询时必需。
+
+旧版本生成的配置文件会在启动时自动迁移：`format` 为 `qqwry` 的数据库条目被移除，`selected.ipv4` 中的 `qqwry`、`chunzhen` 改为 `czdb`，其它数据库条目与自定义下载地址保持不变；同时把 czdb 的默认定义（名称 `czdb`、别名 `chunzhen`/`cz88`、文件 `ipv4.czdb`、官方下载地址）写进 `databases` 列表——被移除的 qqwry 条目就地替换为 czdb，若配置里还没有 czdb 条目（例如已由更早的版本迁移过），则把 czdb 条目插到列表最前面，因此 `nali info` 能看到它；已有 czdb 条目时不会重复添加，也不会覆盖你的自定义设置。迁移会重写 `config.yaml`，原有注释可能丢失；旧的 `qqwry.dat` 不会被自动删除，可手动清理。`NALI_DB_IP4=qqwry` 不再可用，会直接报错，请改成 `czdb`。
+
+推荐把密钥直接写进配置文件的数据库条目：编辑 `nali info` 显示的目录下的 `config.yaml`，把 `czdb` 条目改成下面这样（把两个占位符换成纯真授权页给出的密钥）：
+
+```yaml
+- name: czdb
+  name-alias: [chunzhen, cz88]
+  format: czdb
+  file: ipv4.czdb
+  zip-entry: cz88_public_v4.czdb
+  key: "<base64密钥>"
+  languages: [zh-CN]
+  types: [IPv4]
+  download-urls:
+  - https://www.cz88.net/api/communityIpAuthorization/communityIpDbFile?fn=czdb&key=<下载授权密钥>
+```
+
+其中 `key:` 是解密密钥；`download-urls` 可以直接写纯真提供的专属下载链接（链接里已经含下载授权密钥），这样查询和 `nali update` 自动更新都不需要任何环境变量。
+
+注意：密钥会以明文保存在 `config.yaml` 里，请不要把该配置文件提交到仓库或分享给他人（该文件在 `nali info` 显示的目录中，不在仓库内）。
+
+作为替代方式（适合 CI 或临时使用），也可以用环境变量 `CZDB_KEY` 提供解密密钥（兼容 `NALI_CZDB_KEY`），配置文件里的 `key:` 优先于环境变量：
+
+```
+export CZDB_KEY="<base64密钥>"   # Linux / macOS
+
+set CZDB_KEY=<base64密钥>        # Windows cmd
+
+$env:CZDB_KEY="<base64密钥>"     # Windows PowerShell
+```
+
+自动下载 CZDB 还需要下载授权密钥。如果 `download-urls` 里的链接已经带上授权密钥（如上例），无需再配置；否则可以让链接保留 `{key}` 占位符，并通过环境变量 `CZDB_DOWNLOAD_KEY` 提供该密钥（兼容 `NALI_CZDB_DOWNLOAD_KEY`）。两种方式都没有时不会自动下载，请手动把 `ipv4.czdb` 放到 `nali info` 显示的数据目录，或在配置文件中用绝对路径指定 `file`。
+
+全新安装的最小步骤：
+
+1. 先在配置文件的 `czdb` 条目里填好 `key:`（或设置环境变量 `CZDB_KEY`）。缺少密钥时任何 IPv4 查询都会直接以 `Database init failed: 未配置 czdb 解密密钥` 退出。
+2. 需要自动下载时，再把纯真提供的专属下载链接填进 `download-urls`（或设置环境变量 `CZDB_DOWNLOAD_KEY`）；否则按上面的说明手动放置 `ipv4.czdb`。
+
+不想申请纯真授权时，也可以改用其它数据库，例如临时用环境变量切换：
+
+```
+$ NALI_DB_IP4=ip2region nali 8.8.8.8
+$ NALI_DB_IP4=ipinfo nali 8.8.8.8
+```
+
+长期使用可在配置文件中把 `selected.ipv4` 改成 `ip2region` 或 `ipinfo`。
+
+IPv6 可选数据库 `czdb-ipv6`（`ipv6.czdb`）用法相同，通过 `NALI_DB_IP6=czdb-ipv6 nali 240e::1` 或配置中的 `selected.ipv6` 选用；默认的 IPv6 数据库仍然是 `zxipv6wry`。
 
 ### 使用 IPinfo Lite
 
@@ -298,21 +359,23 @@ Use "nali [command] --help" for more information about a command.
 
 ### 更新数据库
 
-不带参数时更新纯真、ZX IPv6、ip2region (IPv4) 和 CDN 数据库。体积较大的可选数据库 `ip2region-ipv6`（约 37 MB）和 `ipinfo`（约 24 MB）只在被选用（配置文件的 `selected` 或 `NALI_DB_*` 环境变量）或本地已存在时才会更新。
+不带参数时更新纯真 CZDB、ZX IPv6、ip2region (IPv4) 和 CDN 数据库。体积较大的可选数据库 `czdb-ipv6`、`ip2region-ipv6`（约 37 MB）和 `ipinfo`（约 24 MB）只在被选用（配置文件的 `selected` 或 `NALI_DB_*` 环境变量）或本地已存在时才会更新。
 
 ```
 $ nali update
-2026/09/30 09:51:48 正在下载最新 qqwry 数据库...
-2026/09/30 09:51:49 qqwry 数据库下载成功: qqwry.dat
+2026/09/30 09:51:48 正在下载最新 czdb 数据库...
+2026/09/30 09:51:49 czdb 数据库下载成功: ipv4.czdb
 2026/09/30 09:51:49 正在下载最新 cdn 数据库...
 2026/09/30 09:51:50 cdn 数据库下载成功: cdn.yml
 ...
 ```
 
+czdb 的下载地址含 `{key}` 占位符，会替换为环境变量 `CZDB_DOWNLOAD_KEY` 的值；如果配置文件的 `download-urls` 里直接写的是纯真提供的专属下载链接，则无需设置该环境变量（见[使用纯真 CZDB 库](#使用纯真-czdb-库)）。
+
 或者指定数据库（逗号分隔，支持别名），指定的数据库总会更新：
 
 ```
-$ nali update --db qqwry,cdn,ipinfo
+$ nali update --db czdb,cdn,ipinfo
 ```
 
 下载的内容与本地数据库相同时不会重新写入，并显示 `数据库已是最新版本`。下载的数据会先校验再替换本地文件，下载失败或内容无效时保留原有的数据库。加上 `-v` 参数会同时将 nali 更新到最新版本。
@@ -326,7 +389,7 @@ $ nali update --db qqwry,cdn,ipinfo
 用逗号分隔多个数据库名称，每个数据库的结果显示在各自的方括号中：
 
 ```
-$ NALI_DB_IP4=qqwry,ipinfo nali 8.8.8.8
+$ NALI_DB_IP4=czdb,ipinfo nali 8.8.8.8
 8.8.8.8 [美国–加利福尼亚州–圣克拉拉–山景城 谷歌公司DNS服务器] [United States AS15169 Google LLC]
 ```
 
@@ -438,7 +501,7 @@ cd testdata/mmdb/generate && go run .
 ## 感谢列表
 
 - [纯真QQIP离线数据库](http://www.cz88.net)
-- [qqwry纯真数据库解析](https://github.com/yinheli/qqwry)
+- [纯真 CZDB 数据库解析](https://github.com/tagphi/czdb-search-golang)
 - [ZX公网ipv6数据库](https://ip.zxinc.org/ipquery/)
 - [Geoip2 city数据库](https://www.maxmind.com/en/geoip2-precision-city-service)
 - [geoip2-golang解析器](https://github.com/oschwald/geoip2-golang)

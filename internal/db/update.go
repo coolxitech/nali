@@ -12,9 +12,9 @@ import (
 
 	"github.com/zu1k/nali/pkg/cdn"
 	"github.com/zu1k/nali/pkg/common"
+	"github.com/zu1k/nali/pkg/czdb"
 	"github.com/zu1k/nali/pkg/geoip"
 	"github.com/zu1k/nali/pkg/ip2region"
-	"github.com/zu1k/nali/pkg/qqwry"
 	"github.com/zu1k/nali/pkg/zxipv6wry"
 )
 
@@ -37,7 +37,7 @@ func UpdateDB(dbNames ...string) {
 
 // DbNameListForUpdate is always refreshed by a plain `nali update`.
 var DbNameListForUpdate = []string{
-	"qqwry",
+	"czdb",
 	"zxipv6wry",
 	"ip2region",
 	"cdn",
@@ -47,6 +47,7 @@ var DbNameListForUpdate = []string{
 // `nali update` only refreshes them when they are selected or already
 // downloaded; `nali update --db <name>` always updates them.
 var DbNameListForUpdateIfUsed = []string{
+	"czdb-ipv6",
 	"ip2region-ipv6",
 	"ipinfo",
 }
@@ -76,7 +77,7 @@ func defaultUpdateList() []string {
 }
 
 var DbCheckFunc = map[Format]func([]byte) bool{
-	FormatQQWry:     qqwry.CheckFile,
+	FormatCZDB:      czdb.CheckFile,
 	FormatZXIPv6Wry: zxipv6wry.CheckFile,
 	FormatMMDB:      geoip.CheckFile,
 	FormatIP2Region: ip2region.CheckFile,
@@ -86,6 +87,32 @@ var DbCheckFunc = map[Format]func([]byte) bool{
 func getUpdateFuncByName(name string) (func() error, string) {
 	name = strings.TrimSpace(name)
 	if db := getDbByName(name); db != nil {
+		// CZDB must be handled before the generic download branch: the official
+		// endpoint answers with a zip archive holding both the IPv4 and the IPv6
+		// database, so saving the response body as-is would store an archive
+		// instead of a database.
+		if db.Format == FormatCZDB {
+			return func() error {
+				log.Printf("正在下载最新 %s 数据库...\n", db.Name)
+				data, err := czdb.FetchEntry(db.ZipEntry, db.DownloadUrls)
+				if err == nil && sameContent(db.File, data) {
+					log.Printf("%s 数据库已是最新版本: %s\n", db.Name, db.File)
+					return nil
+				}
+				if err == nil {
+					err = common.SaveFile(db.File, data)
+				}
+				if err != nil {
+					log.Printf("%s 数据库下载失败，请手动下载解压后保存到本地: %s \n", db.Name, db.File)
+					log.Println("提示：自动下载需要环境变量 CZDB_DOWNLOAD_KEY；也可在配置文件中配置 download-urls 指向 czdb 文件或压缩包")
+					log.Println("error:", err)
+					return err
+				}
+				log.Printf("%s 数据库下载成功: %s\n", db.Name, db.File)
+				return nil
+			}, db.Name
+		}
+
 		// direct download if download-url not null
 		if len(db.DownloadUrls) > 0 {
 			return func() error {
@@ -146,7 +173,7 @@ func getUpdateFuncByName(name string) (func() error, string) {
 		}
 	} else {
 		return func() error {
-			log.Fatalln("该名称的数据库未找到：", name)
+			common.Fatalln("该名称的数据库未找到：", name)
 			return nil
 		}, time.Now().String()
 	}

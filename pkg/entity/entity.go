@@ -29,7 +29,7 @@ type Entity struct {
 	Info     interface{} `json:"info"`
 
 	// Results holds every database's result when several databases are
-	// selected (e.g. NALI_DB_IP4=qqwry,ipinfo); the fields above then carry
+	// selected (e.g. NALI_DB_IP4=czdb,ipinfo); the fields above then carry
 	// the first one.
 	Results []Result `json:"results,omitempty"`
 }

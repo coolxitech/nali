@@ -1,21 +1,20 @@
 package db
 
 import (
-	"log"
 	"net"
 	"strings"
 
 	"github.com/spf13/viper"
 
 	"github.com/zu1k/nali/pkg/cdn"
+	"github.com/zu1k/nali/pkg/common"
 	"github.com/zu1k/nali/pkg/dbif"
 	"github.com/zu1k/nali/pkg/geoip"
-	"github.com/zu1k/nali/pkg/qqwry"
 	"github.com/zu1k/nali/pkg/zxipv6wry"
 )
 
 // GetDBs returns the databases selected for a query type. A selection may
-// name several databases separated by commas, e.g. "qqwry,ipinfo"; all of
+// name several databases separated by commas, e.g. "czdb,ipinfo"; all of
 // them are queried and their results shown side by side.
 func GetDBs(typ dbif.QueryType) (dbs []dbif.DB) {
 	if dbs, found := dbTypeCache[typ]; found {
@@ -54,13 +53,15 @@ func GetDBs(typ dbif.QueryType) (dbs []dbif.DB) {
 		case lang != "zh-CN":
 			db, err = geoip.NewGeoIP(getDbByName("geoip").File, getDbByName("geoip").DownloadUrls)
 		case typ == dbif.TypeIPv4:
-			db, err = qqwry.NewQQwry(getDbByName("qqwry").File, getDbByName("qqwry").DownloadUrls)
+			// open() keeps the CZDB options (key, zip entry, download urls) in
+			// one place instead of duplicating them here
+			db, err = getDbByName("czdb").open()
 		default:
 			db, err = zxipv6wry.NewZXwry(getDbByName("zxipv6wry").File)
 		}
 		// the constructors return a non-nil error whenever the database is nil
 		if err != nil {
-			log.Fatalln("Database init failed:", err)
+			common.Fatalln("Database init failed:", err)
 		}
 		dbs = []dbif.DB{db}
 	}

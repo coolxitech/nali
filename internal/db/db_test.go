@@ -91,7 +91,7 @@ func TestFindKeepsFailedLookups(t *testing.T) {
 
 func TestDefaultUpdateListHonorsMultipleSelection(t *testing.T) {
 	withNameDBMap(t)
-	withViper(t, map[string]string{"selected.ipv4": "qqwry, ipinfo", "selected.ipv6": "zx", "selected.cdn": "cdn"})
+	withViper(t, map[string]string{"selected.ipv4": "czdb, ipinfo", "selected.ipv6": "zx", "selected.cdn": "cdn"})
 
 	found := false
 	for _, name := range defaultUpdateList() {

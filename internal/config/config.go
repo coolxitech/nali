@@ -1,15 +1,14 @@
 package config
 
 import (
-	"log"
-
 	"github.com/spf13/viper"
 	"github.com/zu1k/nali/internal/db"
+	"github.com/zu1k/nali/pkg/common"
 )
 
 func ReadConfig(basePath string) {
 	viper.SetDefault("databases", db.GetDefaultDBList())
-	viper.SetDefault("selected.ipv4", "qqwry")
+	viper.SetDefault("selected.ipv4", "czdb")
 	viper.SetDefault("selected.ipv6", "zxipv6wry")
 	viper.SetDefault("selected.cdn", "cdn")
 	viper.SetDefault("selected.lang", "zh-CN")
@@ -33,7 +32,7 @@ func ReadConfig(basePath string) {
 	dbList := db.List{}
 	err = viper.UnmarshalKey("databases", &dbList)
 	if err != nil {
-		log.Fatalln("Config invalid:", err)
+		common.Fatalln("Config invalid:", err)
 	}
 
 	db.NameDBMap.From(dbList)

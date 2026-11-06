@@ -1,16 +1,16 @@
 package db
 
 import (
-	"log"
+	"strings"
 
 	"github.com/zu1k/nali/pkg/cdn"
 	"github.com/zu1k/nali/pkg/common"
+	"github.com/zu1k/nali/pkg/czdb"
 	"github.com/zu1k/nali/pkg/dbif"
 	"github.com/zu1k/nali/pkg/geoip"
 	"github.com/zu1k/nali/pkg/ip2location"
 	"github.com/zu1k/nali/pkg/ip2region"
 	"github.com/zu1k/nali/pkg/ipip"
-	"github.com/zu1k/nali/pkg/qqwry"
 	"github.com/zu1k/nali/pkg/zxipv6wry"
 )
 
@@ -19,9 +19,11 @@ type DB struct {
 	NameAlias []string `yaml:"name-alias,omitempty" mapstructure:"name-alias"`
 	Format    Format
 	File      string
+	Key       string `yaml:"key,omitempty" mapstructure:"key"`             // CZDB 解密密钥（base64）
+	ZipEntry  string `yaml:"zip-entry,omitempty" mapstructure:"zip-entry"` // 官方压缩包内条目名
 
-	Languages []string
-	Types     []Type
+	Languages []string `yaml:"languages,omitempty"`
+	Types     []Type   `yaml:"types,omitempty"`
 
 	DownloadUrls []string `yaml:"download-urls,omitempty" mapstructure:"download-urls"`
 }
@@ -31,12 +33,24 @@ func (d *DB) get() (db dbif.DB) {
 		return db
 	}
 
+	db, err := d.open()
+	if err != nil {
+		common.Fatalln("Database init failed:", err)
+	}
+
+	dbNameCache[d.Name] = db
+	return
+}
+
+// open builds the database described by d without consulting or filling the
+// name cache, so callers that need a database without caching it (or that want
+// to report the error themselves) can use it directly.
+func (d *DB) open() (db dbif.DB, err error) {
 	filePath := d.File
 
-	var err error
 	switch d.Format {
-	case FormatQQWry:
-		db, err = qqwry.NewQQwry(filePath, d.DownloadUrls)
+	case FormatCZDB:
+		db, err = czdb.New(czdb.Options{File: filePath, Key: d.Key, ZipEntry: d.ZipEntry, DownloadUrls: d.DownloadUrls})
 	case FormatZXIPv6Wry:
 		db, err = zxipv6wry.NewZXwry(filePath)
 	case FormatIPIP:
@@ -53,19 +67,14 @@ func (d *DB) get() (db dbif.DB) {
 		panic("DB format not supported!")
 	}
 
-	if err != nil {
-		log.Fatalln("Database init failed:", err)
-	}
-
-	dbNameCache[d.Name] = db
-	return
+	return db, err
 }
 
 type Format string
 
 const (
 	FormatMMDB        Format = "mmdb"
-	FormatQQWry       Format = "qqwry"
+	FormatCZDB        Format = "czdb"
 	FormatZXIPv6Wry   Format = "zxipv6wry"
 	FormatIPIP        Format = "ipip"
 	FormatIP2Region   Format = "ip2region"
@@ -142,11 +151,18 @@ func lookupDb(name string) (*DB, bool) {
 }
 
 func getDbByName(name string) (db *DB) {
+	// The retired qqwry database has no reader any more, so a name pointing at
+	// it must not fall through to the generic "not found" message.
+	if strings.EqualFold(strings.TrimSpace(name), "qqwry") {
+		common.Fatalf("旧纯真 qqwry 库已被 czdb 取代：请设置环境变量 CZDB_KEY，并使用 NALI_DB_IP4=czdb（或 chunzhen/cz88）\n")
+		return
+	}
+
 	if dbInfo, found := lookupDb(name); found {
 		return dbInfo
 	}
 
-	log.Fatalf("DB with name %s not found!\n", name)
+	common.Fatalf("DB with name %s not found!\n", name)
 	return
 }
 

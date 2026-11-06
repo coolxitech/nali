@@ -2,22 +2,36 @@ package db
 
 import (
 	"github.com/zu1k/nali/pkg/cdn"
+	"github.com/zu1k/nali/pkg/czdb"
 	"github.com/zu1k/nali/pkg/ip2region"
-	"github.com/zu1k/nali/pkg/qqwry"
 )
 
 func GetDefaultDBList() List {
 	return List{
 		&DB{
-			Name: "qqwry",
+			Name: "czdb",
 			NameAlias: []string{
 				"chunzhen",
+				"cz88",
 			},
-			Format:       FormatQQWry,
-			File:         "qqwry.dat",
+			Format:       FormatCZDB,
+			File:         "ipv4.czdb",
+			ZipEntry:     czdb.EntryIPv4,
 			Languages:    LanguagesZH,
 			Types:        TypesIPv4,
-			DownloadUrls: qqwry.DownloadUrls,
+			DownloadUrls: []string{czdb.DownloadUrl},
+		},
+		&DB{
+			Name: "czdb-ipv6",
+			NameAlias: []string{
+				"cz88-ipv6",
+			},
+			Format:       FormatCZDB,
+			File:         "ipv6.czdb",
+			ZipEntry:     czdb.EntryIPv6,
+			Languages:    LanguagesZH,
+			Types:        TypesIPv6,
+			DownloadUrls: []string{czdb.DownloadUrl},
 		},
 		&DB{
 			Name: "zxipv6wry",

@@ -4,6 +4,6 @@ package migration
 // It must be called before the config is read.
 func Run() {
 	migration2v6()
-	migration2v7()
 	migration2v8()
+	migration2v9()
 }
