@@ -1,11 +1,11 @@
 package constant
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/adrg/xdg"
+	"github.com/zu1k/nali/pkg/common"
 )
 
 var (
@@ -39,11 +39,11 @@ func prepareDir(dir string) {
 	stat, err := os.Stat(dir)
 	if os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			log.Fatal("can not create config dir:", dir)
+			common.Fatal("can not create config dir:", dir)
 		}
 	} else if err != nil {
-		log.Fatal(err)
+		common.Fatal(err)
 	} else if !stat.IsDir() {
-		log.Fatal("path already exists, but not a dir:", dir)
+		common.Fatal("path already exists, but not a dir:", dir)
 	}
 }

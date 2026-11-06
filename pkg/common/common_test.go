@@ -154,6 +154,17 @@ func TestDecodeInput(t *testing.T) {
 	}
 }
 
+func TestEnableUTF8ConsoleRestoreIsSafe(t *testing.T) {
+	restore := EnableUTF8Console()
+	if restore == nil {
+		t.Fatal("restore must never be nil")
+	}
+	// calling it more than once must be safe; without a console attached it is
+	// a no-op that must not panic or change any code page
+	restore()
+	restore()
+}
+
 func TestGetRejectsNotModified(t *testing.T) {
 	// a 304 to an unconditional request must not be taken as an empty body
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

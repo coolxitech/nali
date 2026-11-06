@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/zu1k/nali/internal/constant"
 	"github.com/zu1k/nali/internal/db"
+	"github.com/zu1k/nali/pkg/common"
 	"github.com/zu1k/nali/pkg/ip2region"
 )
 
@@ -23,7 +24,7 @@ func migration2v8() {
 	dbList := db.List{}
 	err = viper.UnmarshalKey("databases", &dbList)
 	if err != nil {
-		log.Fatalln("Config invalid:", err)
+		common.Fatalln("Config invalid:", err)
 	}
 
 	needOverwrite := false

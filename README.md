@@ -401,7 +401,7 @@ export NALI_HOME=/var/nali
 
 ### Windows 下中文乱码
 
-在简体中文 Windows（代码页 936）中，nali 会自动把非 UTF-8 的输入按 GBK 解码，`tracert`、`nslookup` 等命令的输出可以直接通过管道交给 nali。如果仍然乱码，可以加 `--gbk` 强制按 GBK 解码输入。
+在简体中文 Windows（代码页 936）中，nali 会自动把非 UTF-8 的输入按 GBK 解码，`tracert`、`nslookup` 等命令的输出可以直接通过管道交给 nali。在 Windows 控制台（终端）中运行时，nali 会把控制台代码页切换为 UTF-8（65001），并在退出（包括出错退出）时恢复，因此中文输出不再乱码；Windows Terminal 等已经是 UTF-8 的环境不会切换。输入侧的 GBK/GB18030 自动识别保持不变。如果仍然乱码，可以加 `--gbk` 强制按 GBK 解码输入。
 
 ### `tail -f log | jq . | nali` 最后几行不输出
 

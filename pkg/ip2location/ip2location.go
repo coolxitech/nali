@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"github.com/ip2location/ip2location-go/v9"
+
+	"github.com/zu1k/nali/pkg/common"
 )
 
 type IP2Location struct {
@@ -24,7 +26,7 @@ func NewIP2Location(filePath string) (*IP2Location, error) {
 		db, err := ip2location.OpenDB(filePath)
 
 		if err != nil {
-			log.Fatal(err)
+			common.Fatal(err)
 		}
 		return &IP2Location{db: db}, nil
 	}

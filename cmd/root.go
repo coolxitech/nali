@@ -3,7 +3,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -102,11 +101,10 @@ Find document on: https://github.com/zu1k/nali
 	},
 }
 
-// Execute parse subcommand and run
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err.Error())
-	}
+// Execute parse subcommand and run. Errors are returned so that the caller can
+// restore the console code pages before exiting; os.Exit skips deferred calls.
+func Execute() error {
+	return rootCmd.Execute()
 }
 
 func init() {

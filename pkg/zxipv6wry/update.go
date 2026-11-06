@@ -83,11 +83,11 @@ func Un7z(filePath string) (data []byte, err error) {
 
 		if hdr.Name == "ipv6wry.db" {
 			if _, err := io.Copy(fileNeed, sz); err != nil {
-				log.Fatalln("ZX ipv6数据库解压出错：", err.Error())
+				common.Fatalln("ZX ipv6数据库解压出错：", err.Error())
 			}
 		} else {
 			if _, err := io.Copy(fileNoNeed, sz); err != nil {
-				log.Fatalln("ZX ipv6数据库解压出错：", err.Error())
+				common.Fatalln("ZX ipv6数据库解压出错：", err.Error())
 			}
 		}
 	}

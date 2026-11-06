@@ -22,3 +22,5 @@ vendor
 # macOS file
 .DS_Store
 nali
+.openbitfun/
+/.openbitfun/search/flashgrep-index/

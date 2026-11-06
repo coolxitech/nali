@@ -2,10 +2,10 @@ package entity
 
 import (
 	"encoding/json"
-	"log"
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/zu1k/nali/pkg/common"
 	"github.com/zu1k/nali/pkg/dbif"
 )
 
@@ -68,7 +68,7 @@ func (e Entity) ParseInfo() error {
 func (e Entity) Json() string {
 	jsonResult, err := json.Marshal(e)
 	if err != nil {
-		log.Fatal(err.Error())
+		common.Fatal(err.Error())
 	}
 	return string(jsonResult)
 }
