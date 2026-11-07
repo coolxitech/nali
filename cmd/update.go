@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"context"
+	"io"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/zu1k/nali/internal/db"
+	"github.com/zu1k/nali/internal/progress"
 	"github.com/zu1k/nali/internal/repo"
 
 	"github.com/spf13/cobra"
@@ -20,8 +24,27 @@ databases (czdb-ipv6, ip2region-ipv6, ipinfo) are only updated when selected or
 already downloaded.
 Update nali to latest version if -v`,
 	Example: "nali update --db czdb,cdn,ipinfo -v",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Every error from here on is a runtime problem (an unknown database, a
+		// failing download) that main.go reports, so cobra must neither print the
+		// usage text nor the message a second time. A wrong flag fails before this
+		// point and still gets the usage hint.
+		cmd.SilenceUsage = true
+		cmd.SilenceErrors = true
+
 		DBs, _ := cmd.Flags().GetString("db")
+
+		var DBNameArray []string
+		if DBs != "" {
+			DBNameArray = strings.Split(DBs, ",")
+		}
+		// An unknown name is reported here: the update itself terminates the
+		// process, and with the errors silenced above that message would be lost.
+		for _, name := range DBNameArray {
+			if _, err := db.LookupName(name); err != nil {
+				return err
+			}
+		}
 
 		version, _ := cmd.Flags().GetBool("v")
 		if version {
@@ -30,11 +53,24 @@ Update nali to latest version if -v`,
 			}
 		}
 
-		var DBNameArray []string
-		if DBs != "" {
-			DBNameArray = strings.Split(DBs, ",")
+		if !isTerminal(os.Stderr) {
+			// A pipe or a log file cannot be redrawn, so it gets the plain lines
+			// the update has always logged.
+			db.UpdateDB(DBNameArray...)
+			return nil
 		}
-		db.UpdateDB(DBNameArray...)
+
+		// The database packages log to stderr while they download, which would
+		// tear the redrawn progress lines; keep those lines out of the output and
+		// restore the writer once the summary is printed.
+		rep := progress.NewCLI(os.Stderr)
+		writer := log.Writer()
+		log.SetOutput(io.Discard)
+		defer log.SetOutput(writer)
+
+		db.UpdateDBs(context.Background(), DBNameArray, rep.Emit)
+		rep.Close()
+		return nil
 	},
 }
 
