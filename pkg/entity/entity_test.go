@@ -2,8 +2,10 @@ package entity
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/zu1k/nali/internal/db"
+	"github.com/zu1k/nali/pkg/dbif"
 )
 
 const cdnYAML = `
@@ -120,6 +123,150 @@ func TestParseLinePlainText(t *testing.T) {
 	}
 	if es.String() != "no addresses here" {
 		t.Fatalf("String() = %q", es.String())
+	}
+}
+
+// rebuild concatenates the entity texts, which must reproduce the line.
+func rebuild(es Entities) string {
+	var b strings.Builder
+	for _, e := range es {
+		b.WriteString(e.Text)
+	}
+	return b.String()
+}
+
+func TestParseLineWithLookup(t *testing.T) {
+	var queried []string
+	lookup := func(typ dbif.QueryType, text string) ([]*db.Result, error) {
+		queried = append(queried, text)
+		if typ != dbif.QueryType(TypeIPv4) {
+			t.Errorf("lookup(%v, %q): unexpected query type", typ, text)
+		}
+		if text == "192.0.2.1" {
+			// no database had an answer: the token degrades to plain text
+			return nil, nil
+		}
+		return []*db.Result{found("stub", "answer "+text)}, nil
+	}
+
+	line := "dns 8.8.8.8, unknown 192.0.2.1 end"
+	es, err := ParseLineWith(line, lookup)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := []string{"8.8.8.8", "192.0.2.1"}; !slices.Equal(queried, want) {
+		t.Fatalf("queried %v, want %v", queried, want)
+	}
+	if got := rebuild(es); got != line {
+		t.Fatalf("entities do not cover the line:\n got %q\nwant %q", got, line)
+	}
+
+	want := map[string]struct {
+		typ    EntityType
+		info   string
+		source string
+	}{
+		"8.8.8.8":   {TypeIPv4, "answer 8.8.8.8", "stub"},
+		"192.0.2.1": {TypePlain, "", ""},
+	}
+	matched := 0
+	for _, e := range es {
+		w, ok := want[e.Text]
+		if !ok {
+			if e.Type != TypePlain {
+				t.Errorf("unexpected entity %q of type %d", e.Text, e.Type)
+			}
+			continue
+		}
+		matched++
+		if e.Type != w.typ || e.InfoText != w.info || e.Source != w.source {
+			t.Errorf("%s: got type=%d info=%q source=%q, want type=%d info=%q source=%q",
+				e.Text, e.Type, e.InfoText, e.Source, w.typ, w.info, w.source)
+		}
+	}
+	if matched != len(want) {
+		t.Fatalf("matched %d of %d expected entities in %q", matched, len(want), es.String())
+	}
+}
+
+func TestParseLineWithLookupError(t *testing.T) {
+	firstErr := errors.New("Database init failed: DB with name broken not found!")
+	secondErr := errors.New("another database failure")
+	lookup := func(typ dbif.QueryType, text string) ([]*db.Result, error) {
+		switch text {
+		case "8.8.8.8":
+			return nil, firstErr
+		case "192.0.2.1":
+			return nil, secondErr
+		}
+		return []*db.Result{found("stub", "answer "+text)}, nil
+	}
+
+	line := "bad 8.8.8.8 also 192.0.2.1 good 1.1.1.1 end"
+	es, err := ParseLineWith(line, lookup)
+	if !errors.Is(err, firstErr) {
+		t.Fatalf("error = %v, want the first failure %v", err, firstErr)
+	}
+	if got := rebuild(es); got != line {
+		t.Fatalf("entities do not cover the line:\n got %q\nwant %q", got, line)
+	}
+
+	want := map[string]struct {
+		typ    EntityType
+		info   string
+		source string
+	}{
+		// a failed lookup keeps the entity type: it is still an address, it
+		// just has no answer
+		"8.8.8.8":   {TypeIPv4, "", ""},
+		"192.0.2.1": {TypeIPv4, "", ""},
+		// other tokens are still resolved
+		"1.1.1.1": {TypeIPv4, "answer 1.1.1.1", "stub"},
+	}
+	matched := 0
+	for _, e := range es {
+		w, ok := want[e.Text]
+		if !ok {
+			if e.Type != TypePlain {
+				t.Errorf("unexpected entity %q of type %d", e.Text, e.Type)
+			}
+			continue
+		}
+		matched++
+		if e.Type != w.typ || e.InfoText != w.info || e.Source != w.source {
+			t.Errorf("%s: got type=%d info=%q source=%q, want type=%d info=%q source=%q",
+				e.Text, e.Type, e.InfoText, e.Source, w.typ, w.info, w.source)
+		}
+		if len(e.Results) != 0 {
+			t.Errorf("%s: a failed lookup must not set results: %+v", e.Text, e.Results)
+		}
+	}
+	if matched != len(want) {
+		t.Fatalf("matched %d of %d expected entities in %q", matched, len(want), es.String())
+	}
+
+	// the plain text around the entities survives
+	if es[0].Type != TypePlain || es[0].Text != "bad " {
+		t.Errorf("leading plain text: %+v", es[0])
+	}
+	if last := es[len(es)-1]; last.Type != TypePlain || last.Text != " end" {
+		t.Errorf("trailing plain text: %+v", last)
+	}
+}
+
+func TestParseLineWithPlainTextOnly(t *testing.T) {
+	es, err := ParseLineWith("no addresses here", func(typ dbif.QueryType, text string) ([]*db.Result, error) {
+		t.Fatalf("lookup must not be called for %q", text)
+		return nil, nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(es) != 1 || es[0].Type != TypePlain || es[0].Text != "no addresses here" {
+		t.Fatalf("unexpected entities %+v", es)
+	}
+	if got := es.String(); got != "no addresses here" {
+		t.Fatalf("String() = %q", got)
 	}
 }
 

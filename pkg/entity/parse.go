@@ -9,8 +9,25 @@ import (
 	"github.com/zu1k/nali/pkg/re"
 )
 
+// LookupFunc resolves one token against the databases of typ.
+type LookupFunc func(typ dbif.QueryType, text string) ([]*db.Result, error)
+
 // ParseLine parse a line into entities
 func ParseLine(line string) Entities {
+	// db.Find is the fatal lookup: like before the non-fatal split it
+	// terminates the process when the selected databases cannot be
+	// initialised. Callers that must survive such failures use ParseLineWith
+	// with db.FindOrError.
+	es, _ := ParseLineWith(line, func(typ dbif.QueryType, text string) ([]*db.Result, error) {
+		return db.Find(typ, text), nil
+	})
+	return es
+}
+
+// ParseLineWith parses a line into entities, resolving each token with lookup.
+// A token whose lookup fails keeps its entity type but gets no results; the
+// first such error is returned while the remaining tokens are still parsed.
+func ParseLineWith(line string, lookup LookupFunc) (Entities, error) {
 	ip4sLoc := re.IPv4Re.FindAllStringIndex(line, -1)
 	ip6sLoc := re.IPv6Re.FindAllStringIndex(line, -1)
 	domainsLoc := re.DomainRe.FindAllStringIndex(line, -1)
@@ -43,6 +60,7 @@ func ParseLine(line string) Entities {
 
 	sort.Sort(tmp)
 	var es Entities
+	var firstErr error
 
 	idx := 0
 	for _, e := range tmp {
@@ -55,7 +73,14 @@ func ParseLine(line string) Entities {
 					Text: line[idx:start],
 				})
 			}
-			if !e.setResults(db.Find(dbif.QueryType(e.Type), e.Text)) {
+			results, err := lookup(dbif.QueryType(e.Type), e.Text)
+			if err != nil {
+				// keep the entity type: the token is still an address, it just
+				// has no answer because the databases could not be resolved
+				if firstErr == nil {
+					firstErr = err
+				}
+			} else if !e.setResults(results) {
 				e.Type = TypePlain
 			}
 			idx = e.Loc[1]
@@ -69,7 +94,7 @@ func ParseLine(line string) Entities {
 			Text: line[idx:total],
 		})
 	}
-	return es
+	return es, firstErr
 }
 
 // setResults stores the lookup results of one entity and reports whether any

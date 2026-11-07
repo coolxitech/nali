@@ -34,7 +34,7 @@ func NewZXwry(filePath string) (*ZXwry, error) {
 	}
 
 	if !CheckFile(fileData) {
-		common.Fatalln("ZX IPv6数据库存在错误，请重新下载")
+		return nil, fmt.Errorf("ZX IPv6 数据库文件损坏，请重新下载: %s", filePath)
 	}
 
 	header := fileData[:24]

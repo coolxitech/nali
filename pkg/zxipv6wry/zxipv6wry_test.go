@@ -2,6 +2,9 @@ package zxipv6wry
 
 import (
 	"encoding/binary"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -28,6 +31,29 @@ func TestCheckFile(t *testing.T) {
 	} {
 		if CheckFile(data) {
 			t.Errorf("%s accepted", name)
+		}
+	}
+}
+
+// TestNewZXwryRejectsCorruptFile checks that a damaged database file is
+// reported to the caller: NewZXwry used to exit the process instead, which
+// killed the TUI on its first IPv6 query.
+func TestNewZXwryRejectsCorruptFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "zxipv6wry.db")
+	if err := os.WriteFile(path, []byte("this is not a ZX IPv6 database"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := NewZXwry(path)
+	if err == nil {
+		t.Fatalf("expected an error for a corrupt file, got %v", db)
+	}
+	if db != nil {
+		t.Errorf("got a database alongside the error: %v", db)
+	}
+	for _, want := range []string{"请重新下载", path} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q does not mention %q", err, want)
 		}
 	}
 }

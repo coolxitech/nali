@@ -1,6 +1,8 @@
 package db
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/zu1k/nali/pkg/cdn"
@@ -28,18 +30,14 @@ type DB struct {
 	DownloadUrls []string `yaml:"download-urls,omitempty" mapstructure:"download-urls"`
 }
 
-func (d *DB) get() (db dbif.DB) {
-	if db, found := dbNameCache[d.Name]; found {
-		return db
-	}
-
-	db, err := d.open()
-	if err != nil {
-		common.Fatalln("Database init failed:", err)
-	}
-
-	dbNameCache[d.Name] = db
-	return
+// getOrError opens the database described by d and caches it by name. It
+// reports a failed open to the caller instead of terminating the process, so
+// callers with their own error reporting (the TUI) can use it; the CLI goes
+// through resolveDBs, which turns the error into the fatal message it has
+// always printed. The open runs under the cache lock, so concurrent callers
+// share one handle, and a database that fails to open is never cached.
+func (d *DB) getOrError() (dbif.DB, error) {
+	return loadDB(d.Name, d.open)
 }
 
 // open builds the database described by d without consulting or filling the
@@ -64,7 +62,7 @@ func (d *DB) open() (db dbif.DB, err error) {
 	case FormatCDNYml:
 		db, err = cdn.NewCDN(filePath, d.DownloadUrls)
 	default:
-		panic("DB format not supported!")
+		return nil, fmt.Errorf("DB format %q not supported", d.Format)
 	}
 
 	return db, err
@@ -151,19 +149,36 @@ func lookupDb(name string) (*DB, bool) {
 }
 
 func getDbByName(name string) (db *DB) {
+	db, err := lookupDBByName(name)
+	if err != nil {
+		common.Fatalln(err)
+	}
+	return db
+}
+
+// lookupDBByName is the non-fatal form of getDbByName: it returns the database
+// description or an error carrying the message the CLI prints.
+func lookupDBByName(name string) (*DB, error) {
 	// The retired qqwry database has no reader any more, so a name pointing at
 	// it must not fall through to the generic "not found" message.
 	if strings.EqualFold(strings.TrimSpace(name), "qqwry") {
-		common.Fatalf("旧纯真 qqwry 库已被 czdb 取代：请设置环境变量 CZDB_KEY，并使用 NALI_DB_IP4=czdb（或 chunzhen/cz88）\n")
-		return
+		return nil, errors.New("旧纯真 qqwry 库已被 czdb 取代：请设置环境变量 CZDB_KEY，并使用 NALI_DB_IP4=czdb（或 chunzhen/cz88）")
 	}
 
 	if dbInfo, found := lookupDb(name); found {
-		return dbInfo
+		return dbInfo, nil
 	}
 
-	common.Fatalf("DB with name %s not found!\n", name)
-	return
+	//nolint:staticcheck // the trailing "!" is part of the message the CLI has always printed
+	return nil, fmt.Errorf("DB with name %s not found!", name)
+}
+
+// LookupName resolves a configured database name or alias without terminating
+// the process, so front-ends can report the failure themselves. It is what
+// getDbByName wraps and reports the same messages, including the retired qqwry
+// hint.
+func LookupName(name string) (*DB, error) {
+	return lookupDBByName(name)
 }
 
 type Result struct {
