@@ -5,21 +5,21 @@
 <h4 align="center">一个查询IP地理信息和CDN提供商的离线终端工具.</h4>
 
 <p align="center">
-  <a href="https://github.com/zu1k/nali/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/zu1k/nali/go.yml?branch=master&style=flat-square" alt="Github Actions">
+  <a href="https://github.com/coolxitech/nali/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/coolxitech/nali/go.yml?branch=master&style=flat-square" alt="Github Actions">
   </a>
-  <a href="https://goreportcard.com/report/github.com/zu1k/nali">
-    <img src="https://goreportcard.com/badge/github.com/zu1k/nali?style=flat-square">
+  <a href="https://goreportcard.com/report/github.com/coolxitech/nali">
+    <img src="https://goreportcard.com/badge/github.com/coolxitech/nali?style=flat-square">
   </a>
-  <a href="https://github.com/zu1k/nali/releases">
-    <img src="https://img.shields.io/github/release/zu1k/nali/all.svg?style=flat-square">
+  <a href="https://github.com/coolxitech/nali/releases">
+    <img src="https://img.shields.io/github/release/coolxitech/nali/all.svg?style=flat-square">
   </a>
-  <a href="https://github.com/zu1k/nali/releases">
-    <img src="https://img.shields.io/github/downloads/zu1k/nali/total?style=flat-square">
+  <a href="https://github.com/coolxitech/nali/releases">
+    <img src="https://img.shields.io/github/downloads/coolxitech/nali/total?style=flat-square">
   </a>
 </p>
 
-#### [English](https://github.com/zu1k/nali/blob/master/README_en.md)
+#### [English](https://github.com/coolxitech/nali/blob/master/README_en.md)
 
 ## 功能
 
@@ -57,14 +57,6 @@ $ go install github.com/zu1k/nali@latest
 可以从Release页面下载预编译好的可执行程序: [Release](https://github.com/zu1k/nali/releases)
 
 你需要选择适合你系统和硬件架构的版本下载，解压后可直接运行
-
-### Arch 系 Linux
-
-我们在 Aur 中发布了 3 个相关的包:
-
-- `nali-go`: Release 版本，安装时编译
-- `nali-go-bin`: Release 版本，预编译的二进制文件
-- `nali-go-git`: 最新的 master 分支版本，安装时编译
 
 ### Debian / Ubuntu
 

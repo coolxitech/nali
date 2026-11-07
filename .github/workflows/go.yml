@@ -105,27 +105,3 @@ jobs:
 
       - name: Smoke test
         run: docker run --rm nali:ci --version
-
-  release-aur-git:
-    name: Release Aur Git
-    needs: [lint, test, build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'zu1k/nali'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Get version
-        id: version
-        run: echo "version=$(git describe --long --tags | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g')" >> "$GITHUB_OUTPUT"
-
-      - name: Publish AUR package nali-go-git
-        uses: zu1k/aur-publish-action@master
-        with:
-          package_name: nali-go-git
-          commit_username: 'zu1k'
-          commit_email: 'i@zu1k.com'
-          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          new_release: ${{ steps.version.outputs.version }}
