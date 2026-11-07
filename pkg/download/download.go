@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/zu1k/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/common"
 )
 
 // Download downloads the first of urls that answers and saves it to filePath.

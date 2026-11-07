@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/zu1k/nali/pkg/ipinfo"
+	"github.com/coolxitech/nali/pkg/ipinfo"
 )
 
 const (

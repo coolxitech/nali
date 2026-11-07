@@ -3,7 +3,7 @@ package constant
 import "runtime"
 
 var (
-	Owner = "zu1k"
+	Owner = "coolxitech"
 	Repo  = "nali"
 	OS    = runtime.GOOS
 	Arch  = runtime.GOARCH

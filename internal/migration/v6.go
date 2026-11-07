@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/zu1k/nali/internal/constant"
+	"github.com/coolxitech/nali/internal/constant"
 )
 
 func migration2v6() {

@@ -3,7 +3,7 @@ package db
 import (
 	"sync"
 
-	"github.com/zu1k/nali/pkg/dbif"
+	"github.com/coolxitech/nali/pkg/dbif"
 )
 
 var (

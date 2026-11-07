@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/pkg/wry"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/pkg/wry"
 )
 
 func found(source, text string) *db.Result {

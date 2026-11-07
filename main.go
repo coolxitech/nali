@@ -5,12 +5,12 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/zu1k/nali/internal/constant"
+	"github.com/coolxitech/nali/internal/constant"
 
-	"github.com/zu1k/nali/cmd"
-	"github.com/zu1k/nali/internal/config"
-	"github.com/zu1k/nali/internal/migration"
-	"github.com/zu1k/nali/pkg/common"
+	"github.com/coolxitech/nali/cmd"
+	"github.com/coolxitech/nali/internal/config"
+	"github.com/coolxitech/nali/internal/migration"
+	"github.com/coolxitech/nali/pkg/common"
 )
 
 func main() {

@@ -49,18 +49,18 @@
 Nali 需要预先安装 Go >= 1.26. 安装后可以从源码安装软件:
 
 ```sh
-$ go install github.com/zu1k/nali@latest
+$ go install github.com/coolxitech/nali@master
 ```
 
 ### 下载预编译的可执行程序
 
-可以从Release页面下载预编译好的可执行程序: [Release](https://github.com/zu1k/nali/releases)
+可以从Release页面下载预编译好的可执行程序: [Release](https://github.com/coolxitech/nali/releases)
 
 你需要选择适合你系统和硬件架构的版本下载，解压后可直接运行
 
 ### Debian / Ubuntu
 
-从 [Release](https://github.com/zu1k/nali/releases) 页面下载对应架构（amd64、i386、armhf、arm64）的 `.deb` 包后安装：
+从 [Release](https://github.com/coolxitech/nali/releases) 页面下载对应架构（amd64、i386、armhf、arm64）的 `.deb` 包后安装：
 
 ```sh
 $ sudo apt install ./nali_*_amd64.deb

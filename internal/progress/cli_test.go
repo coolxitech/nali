@@ -10,7 +10,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zu1k/nali/internal/db"
+	"github.com/coolxitech/nali/internal/db"
 )
 
 // frame returns the output a renderer wrote since the last call, so that a test

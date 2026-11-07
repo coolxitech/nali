@@ -3,7 +3,7 @@ package tui
 import (
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/zu1k/nali/pkg/entity"
+	"github.com/coolxitech/nali/pkg/entity"
 )
 
 // styles holds every lipgloss style used to render the interface. The entity

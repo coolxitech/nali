@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/zu1k/nali/pkg/dbif"
+	"github.com/coolxitech/nali/pkg/dbif"
 )
 
 // clearCaches drops every cached database and query result by going through the

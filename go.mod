@@ -1,4 +1,4 @@
-module github.com/zu1k/nali
+module github.com/coolxitech/nali
 
 go 1.27.3
 

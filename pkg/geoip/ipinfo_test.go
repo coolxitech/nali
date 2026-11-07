@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/zu1k/nali/pkg/ipinfo"
+	"github.com/coolxitech/nali/pkg/ipinfo"
 )
 
 func TestIPinfoDatabase(t *testing.T) {

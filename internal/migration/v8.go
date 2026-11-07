@@ -4,11 +4,11 @@ import (
 	"log"
 	"strings"
 
+	"github.com/coolxitech/nali/internal/constant"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/ip2region"
 	"github.com/spf13/viper"
-	"github.com/zu1k/nali/internal/constant"
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/pkg/common"
-	"github.com/zu1k/nali/pkg/ip2region"
 )
 
 func migration2v8() {

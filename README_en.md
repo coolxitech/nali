@@ -49,18 +49,18 @@
 Nali requires Go >= 1.26. You can build it from source:
 
 ```sh
-$ go install github.com/zu1k/nali@latest
+$ go install github.com/coolxitech/nali@master
 ```
 
 ### Install pre-build binary
 
-Pre-built binaries are available here: [release](https://github.com/zu1k/nali/releases)
+Pre-built binaries are available here: [release](https://github.com/coolxitech/nali/releases)
 
 Download the binary compatible with your platform, unpack and copy to the directory in path
 
 ### Debian / Ubuntu
 
-Download the `.deb` package for your architecture (amd64, i386, armhf, arm64) from the [release](https://github.com/zu1k/nali/releases) page and install it:
+Download the `.deb` package for your architecture (amd64, i386, armhf, arm64) from the [release](https://github.com/coolxitech/nali/releases) page and install it:
 
 ```sh
 $ sudo apt install ./nali_*_amd64.deb

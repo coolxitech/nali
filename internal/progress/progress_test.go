@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zu1k/nali/internal/db"
+	"github.com/coolxitech/nali/internal/db"
 )
 
 // at returns a fixed point in time so that the speed of a row is measured over

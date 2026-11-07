@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zu1k/nali/pkg/common"
-	"github.com/zu1k/nali/pkg/download"
-	"github.com/zu1k/nali/pkg/wry"
+	"github.com/coolxitech/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/download"
+	"github.com/coolxitech/nali/pkg/wry"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 )

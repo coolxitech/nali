@@ -1,9 +1,9 @@
 package config
 
 import (
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/pkg/common"
 	"github.com/spf13/viper"
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/pkg/common"
 )
 
 func ReadConfig(basePath string) {

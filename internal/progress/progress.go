@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zu1k/nali/internal/db"
+	"github.com/coolxitech/nali/internal/db"
 )
 
 // State is the phase of one update run.

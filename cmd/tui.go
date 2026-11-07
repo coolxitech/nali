@@ -13,11 +13,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/zu1k/nali/internal/constant"
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/internal/tui"
-	"github.com/zu1k/nali/pkg/dbif"
-	"github.com/zu1k/nali/pkg/entity"
+	"github.com/coolxitech/nali/internal/constant"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/internal/tui"
+	"github.com/coolxitech/nali/pkg/dbif"
+	"github.com/coolxitech/nali/pkg/entity"
 )
 
 // tuiCmd represents the tui command

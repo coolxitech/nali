@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/coolxitech/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/dbif"
 	"github.com/fatih/color"
-	"github.com/zu1k/nali/pkg/common"
-	"github.com/zu1k/nali/pkg/dbif"
 )
 
 type EntityType uint

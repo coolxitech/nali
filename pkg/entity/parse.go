@@ -4,9 +4,9 @@ import (
 	"net/netip"
 	"sort"
 
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/pkg/dbif"
-	"github.com/zu1k/nali/pkg/re"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/pkg/dbif"
+	"github.com/coolxitech/nali/pkg/re"
 )
 
 // LookupFunc resolves one token against the databases of typ.

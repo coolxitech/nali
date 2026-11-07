@@ -1,4 +1,4 @@
-module github.com/zu1k/nali/testdata/mmdb/generate
+module github.com/coolxitech/nali/testdata/mmdb/generate
 
 go 1.26.0
 

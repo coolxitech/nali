@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/adrg/xdg"
-	"github.com/zu1k/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/common"
 )
 
 var (

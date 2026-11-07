@@ -10,8 +10,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/zu1k/nali/pkg/download"
-	"github.com/zu1k/nali/pkg/re"
+	"github.com/coolxitech/nali/pkg/download"
+	"github.com/coolxitech/nali/pkg/re"
 )
 
 var DownloadUrls = []string{

@@ -39,7 +39,7 @@ Section: net
 Priority: optional
 Architecture: $arch
 Maintainer: zu1k <i@zu1k.com>
-Homepage: https://github.com/zu1k/nali
+Homepage: https://github.com/coolxitech/nali
 Description: offline tool for querying IP geographic information and CDN provider
  Nali annotates IP addresses and CDN domain names in any text, e.g. the output
  of dig, nslookup or traceroute, with their location and CDN provider.

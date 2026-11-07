@@ -8,8 +8,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/coolxitech/nali/pkg/common"
 	"github.com/saracen/go7z"
-	"github.com/zu1k/nali/pkg/common"
 )
 
 // Download downloads and unpacks the ZX IPv6 database, optionally saving it to

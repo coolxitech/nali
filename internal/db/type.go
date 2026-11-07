@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zu1k/nali/pkg/cdn"
-	"github.com/zu1k/nali/pkg/common"
-	"github.com/zu1k/nali/pkg/czdb"
-	"github.com/zu1k/nali/pkg/dbif"
-	"github.com/zu1k/nali/pkg/geoip"
-	"github.com/zu1k/nali/pkg/ip2location"
-	"github.com/zu1k/nali/pkg/ip2region"
-	"github.com/zu1k/nali/pkg/ipip"
-	"github.com/zu1k/nali/pkg/zxipv6wry"
+	"github.com/coolxitech/nali/pkg/cdn"
+	"github.com/coolxitech/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/czdb"
+	"github.com/coolxitech/nali/pkg/dbif"
+	"github.com/coolxitech/nali/pkg/geoip"
+	"github.com/coolxitech/nali/pkg/ip2location"
+	"github.com/coolxitech/nali/pkg/ip2region"
+	"github.com/coolxitech/nali/pkg/ipip"
+	"github.com/coolxitech/nali/pkg/zxipv6wry"
 )
 
 type DB struct {

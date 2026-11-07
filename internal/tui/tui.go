@@ -14,9 +14,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/internal/progress"
-	"github.com/zu1k/nali/pkg/entity"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/internal/progress"
+	"github.com/coolxitech/nali/pkg/entity"
 )
 
 const (

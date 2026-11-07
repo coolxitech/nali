@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/internal/progress"
-	"github.com/zu1k/nali/internal/repo"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/internal/progress"
+	"github.com/coolxitech/nali/internal/repo"
 
 	"github.com/spf13/cobra"
 )

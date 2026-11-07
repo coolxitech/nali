@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zu1k/nali/pkg/download"
-	"github.com/zu1k/nali/pkg/ipinfo"
+	"github.com/coolxitech/nali/pkg/download"
+	"github.com/coolxitech/nali/pkg/ipinfo"
 
 	"github.com/oschwald/geoip2-golang"
 	"github.com/oschwald/maxminddb-golang"

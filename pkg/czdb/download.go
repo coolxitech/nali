@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zu1k/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/common"
 )
 
 const (

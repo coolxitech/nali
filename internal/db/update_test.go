@@ -14,7 +14,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/zu1k/nali/pkg/czdb"
+	"github.com/coolxitech/nali/pkg/czdb"
 )
 
 // formatRaw has no DbCheckFunc, so any downloaded content is accepted.

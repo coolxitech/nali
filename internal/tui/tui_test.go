@@ -14,7 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/zu1k/nali/pkg/entity"
+	"github.com/coolxitech/nali/pkg/entity"
 )
 
 // stubEntities is the answer the stub lookup returns: the whole line is one

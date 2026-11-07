@@ -11,10 +11,10 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/zu1k/nali/internal/constant"
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/pkg/czdb"
-	"github.com/zu1k/nali/pkg/ip2region"
+	"github.com/coolxitech/nali/internal/constant"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/pkg/czdb"
+	"github.com/coolxitech/nali/pkg/ip2region"
 )
 
 // withConfig points the migrations at a temporary config directory holding

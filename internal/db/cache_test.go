@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/zu1k/nali/pkg/dbif"
+	"github.com/coolxitech/nali/pkg/dbif"
 )
 
 // closeSpy is a cached database that remembers whether ResetCache closed it.

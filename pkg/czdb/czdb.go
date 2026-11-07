@@ -25,9 +25,9 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/coolxitech/nali/pkg/common"
 	db "github.com/tagphi/czdb-search-golang/pkg/db"
 	"github.com/tagphi/czdb-search-golang/pkg/utils"
-	"github.com/zu1k/nali/pkg/common"
 )
 
 // Names of the two database files inside the official download archive.

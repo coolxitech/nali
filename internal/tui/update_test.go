@@ -13,9 +13,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/internal/progress"
-	"github.com/zu1k/nali/pkg/entity"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/internal/progress"
+	"github.com/coolxitech/nali/pkg/entity"
 )
 
 // stubUpdater stands in for db.UpdateDBs: the test scripts every event, so

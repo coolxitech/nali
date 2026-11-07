@@ -8,8 +8,8 @@ import (
 	"net"
 	"os"
 
-	"github.com/zu1k/nali/pkg/common"
-	"github.com/zu1k/nali/pkg/wry"
+	"github.com/coolxitech/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/wry"
 )
 
 type ZXwry struct {

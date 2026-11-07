@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/zu1k/nali/pkg/common"
-	"github.com/zu1k/nali/pkg/dbif"
+	"github.com/coolxitech/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/dbif"
 )
 
 // GetDBs returns the databases selected for a query type. A selection may

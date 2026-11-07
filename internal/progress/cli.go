@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 
-	"github.com/zu1k/nali/internal/db"
+	"github.com/coolxitech/nali/internal/db"
 )
 
 const (

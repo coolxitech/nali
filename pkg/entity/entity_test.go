@@ -12,8 +12,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/viper"
 
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/pkg/dbif"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/pkg/dbif"
 )
 
 const cdnYAML = `

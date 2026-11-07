@@ -9,9 +9,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
-	"github.com/zu1k/nali/internal/constant"
-	"github.com/zu1k/nali/pkg/common"
-	"github.com/zu1k/nali/pkg/entity"
+	"github.com/coolxitech/nali/internal/constant"
+	"github.com/coolxitech/nali/pkg/common"
+	"github.com/coolxitech/nali/pkg/entity"
 )
 
 var rootCmd = &cobra.Command{
@@ -19,7 +19,7 @@ var rootCmd = &cobra.Command{
 	Short: "An offline tool for querying IP geographic information",
 	Long: `An offline tool for querying IP geographic information.
 
-Find document on: https://github.com/zu1k/nali
+Find document on: https://github.com/coolxitech/nali
 
 #1 Query a simple IP address
 

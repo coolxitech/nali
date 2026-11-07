@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coolxitech/nali/internal/constant"
+	"github.com/coolxitech/nali/internal/db"
+	"github.com/coolxitech/nali/pkg/common"
 	"github.com/spf13/viper"
-	"github.com/zu1k/nali/internal/constant"
-	"github.com/zu1k/nali/internal/db"
-	"github.com/zu1k/nali/pkg/common"
 )
 
 const (
