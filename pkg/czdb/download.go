@@ -3,6 +3,7 @@ package czdb
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,6 +40,17 @@ var (
 // download. Only a payload that looks like a database (or an archive) is
 // cached, so an error response is retried by the next call.
 func FetchEntry(entry string, urls []string) ([]byte, error) {
+	return FetchEntryWithContext(context.Background(), nil, entry, urls)
+}
+
+// FetchEntryWithContext is FetchEntry with a context and a progress callback: it
+// stops when ctx is done and reports the bytes received through progress, which
+// may be nil. A payload already downloaded in this process is reused without
+// another download and therefore without further progress reports.
+func FetchEntryWithContext(ctx context.Context, progress common.DownloadProgress, entry string, urls []string) ([]byte, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if entry == "" {
 		entry = EntryIPv4
 	}
@@ -57,22 +69,13 @@ func FetchEntry(entry string, urls []string) ([]byte, error) {
 		return nil, errors.New("未配置 czdb 下载地址")
 	}
 
-	payloadMu.Lock()
-	defer payloadMu.Unlock()
-
-	key := strings.Join(expanded, "\n")
-	payload, cached := payloadCache[key]
-	if !cached {
-		payload, err = download(expanded)
-		if err != nil {
-			return nil, err
-		}
-		if !isZip(payload) && !CheckFile(payload) {
-			return nil, describePayload(payload)
-		}
-		payloadCache[key] = payload
+	payload, err := cachedPayload(ctx, progress, strings.Join(expanded, "\n"), expanded)
+	if err != nil {
+		return nil, err
 	}
 
+	// Extracting is pure CPU work on the immutable payload, so it runs outside
+	// the lock that serializes the downloads.
 	data, err := extractDatabase(payload, entry)
 	if err != nil {
 		return nil, err
@@ -94,14 +97,46 @@ func FetchEntry(entry string, urls []string) ([]byte, error) {
 	return data, nil
 }
 
+// cachedPayload returns the download of one download source, fetching it only
+// once per process so the IPv4 and the IPv6 database share one download. Only a
+// payload that looks like a database (or an archive) is cached, so an error
+// response is retried by the next call. The lock is held while downloading, so
+// two callers never fetch the same source at the same time.
+func cachedPayload(ctx context.Context, progress common.DownloadProgress, key string, urls []string) ([]byte, error) {
+	payloadMu.Lock()
+	defer payloadMu.Unlock()
+
+	if payload, cached := payloadCache[key]; cached {
+		return payload, nil
+	}
+
+	payload, err := download(ctx, progress, urls)
+	if err != nil {
+		return nil, err
+	}
+	if !isZip(payload) && !CheckFile(payload) {
+		return nil, describePayload(payload)
+	}
+	payloadCache[key] = payload
+	return payload, nil
+}
+
 // download fetches the first URL that answers, retrying a few times because the
-// official endpoint is occasionally slow or flaky.
-func download(urls []string) ([]byte, error) {
+// official endpoint is occasionally slow or flaky. A cancelled context stops the
+// retries at once, so giving up is reported without further requests.
+func download(ctx context.Context, progress common.DownloadProgress, urls []string) ([]byte, error) {
 	var err error
 	for attempt := 0; attempt <= downloadRetries; attempt++ {
 		var data []byte
-		if data, err = common.GetHttpClient().Get(urls...); err == nil {
+		if data, err = common.GetHttpClient().GetWithContext(ctx, progress, urls...); err == nil {
 			return data, nil
+		}
+		// The caller gave up: retrying would only delay the report.
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
+		if errors.Is(err, context.Canceled) {
+			return nil, err
 		}
 	}
 	return nil, fmt.Errorf("纯真 CZDB 下载失败: %w", redactDownloadKey(err))

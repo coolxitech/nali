@@ -1,7 +1,9 @@
 package zxipv6wry
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -10,8 +12,17 @@ import (
 	"github.com/zu1k/nali/pkg/common"
 )
 
+// Download downloads and unpacks the ZX IPv6 database, optionally saving it to
+// filePath.
 func Download(filePath ...string) (data []byte, err error) {
-	data, err = getData()
+	return DownloadWithContext(context.Background(), nil, filePath...)
+}
+
+// DownloadWithContext is Download with a context and a progress callback: it
+// stops when ctx is done and reports the bytes received through progress, which
+// may be nil.
+func DownloadWithContext(ctx context.Context, progress common.DownloadProgress, filePath ...string) (data []byte, err error) {
+	data, err = getData(ctx, progress)
 	if err != nil {
 		log.Printf("ZX IPv6数据库下载失败，请手动下载解压后保存到本地: %s \n", filePath)
 		log.Println("下载链接： https://ip.zxinc.org/ip.7z")
@@ -36,8 +47,8 @@ const (
 	zx = "https://ip.zxinc.org/ip.7z"
 )
 
-func getData() (data []byte, err error) {
-	data, err = common.GetHttpClient().Get(zx)
+func getData(ctx context.Context, progress common.DownloadProgress) (data []byte, err error) {
+	data, err = common.GetHttpClient().GetWithContext(ctx, progress, zx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,12 +59,18 @@ func getData() (data []byte, err error) {
 	}
 	defer os.Remove(file7z.Name())
 	if err := os.WriteFile(file7z.Name(), data, 0644); err == nil {
-		return Un7z(file7z.Name())
+		return Un7z(ctx, file7z.Name())
 	}
 	return
 }
 
-func Un7z(filePath string) (data []byte, err error) {
+// Un7z unpacks the database member of the 7z archive at filePath. It stops with
+// the error of ctx when ctx is done, so a cancelled update does not keep
+// decompressing.
+func Un7z(ctx context.Context, filePath string) (data []byte, err error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	sz, err := go7z.OpenReader(filePath)
 	if err != nil {
 		return nil, err
@@ -64,15 +81,24 @@ func Un7z(filePath string) (data []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
+	// The temporary files are closed before they are removed (defers run in
+	// reverse order, so the Close below must come last), which Windows requires,
+	// and this happens on every return path, including the decompression errors
+	// reported further down.
+	defer os.Remove(fileNoNeed.Name())
+	defer fileNoNeed.Close()
 	fileNeed, err := os.CreateTemp("", "*")
 	if err != nil {
 		return nil, err
 	}
+	defer os.Remove(fileNeed.Name())
+	defer fileNeed.Close()
 
-	if err != nil {
-		return nil, err
-	}
 	for {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, ctxErr
+		}
+
 		hdr, err := sz.Next()
 		if err == io.EOF {
 			break // IdxEnd of archive
@@ -83,11 +109,11 @@ func Un7z(filePath string) (data []byte, err error) {
 
 		if hdr.Name == "ipv6wry.db" {
 			if _, err := io.Copy(fileNeed, sz); err != nil {
-				common.Fatalln("ZX ipv6数据库解压出错：", err.Error())
+				return nil, fmt.Errorf("ZX ipv6数据库解压出错：%w", err)
 			}
 		} else {
 			if _, err := io.Copy(fileNoNeed, sz); err != nil {
-				common.Fatalln("ZX ipv6数据库解压出错：", err.Error())
+				return nil, fmt.Errorf("ZX ipv6数据库解压出错：%w", err)
 			}
 		}
 	}
@@ -95,7 +121,5 @@ func Un7z(filePath string) (data []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(fileNoNeed.Name())
-	defer os.Remove(fileNeed.Name())
 	return os.ReadFile(fileNeed.Name())
 }
