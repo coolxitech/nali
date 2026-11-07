@@ -112,8 +112,5 @@ func checkSuperBlock(data []byte, offset int) bool {
 		ipLength = 16
 	}
 	indexBlockLength := ipLength*2 + indexBlockOverhead
-	if endIndexPtr+indexBlockLength > dbSize {
-		return false
-	}
-	return true
+	return endIndexPtr+indexBlockLength <= dbSize
 }
