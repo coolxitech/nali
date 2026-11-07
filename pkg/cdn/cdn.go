@@ -15,9 +15,9 @@ import (
 )
 
 var DownloadUrls = []string{
+	"https://api.kuxi.tech/web/cdn",
+	"https://gh-proxy.com/https://raw.githubusercontent.com/4ft35t/cdn/master/src/cdn.yml",
 	"https://cdn.jsdelivr.net/gh/4ft35t/cdn/src/cdn.yml",
-	"https://raw.githubusercontent.com/4ft35t/cdn/master/src/cdn.yml",
-	"https://raw.githubusercontent.com/SukkaLab/cdn/master/src/cdn.yml",
 }
 
 type CDN struct {
