@@ -35,6 +35,7 @@
 - CDN provider query
 - Pipeline support
 - Interactive query
+- Interactive terminal UI (TUI)
 - Both ipv4 and ipv6 supported
 - Multilingual support
 - Offline query
@@ -114,6 +115,83 @@ $ nali
 8.8.8.8 [美国 加利福尼亚州圣克拉拉县山景市谷歌公司DNS服务器]
 quit
 ```
+
+### Interactive terminal UI (TUI)
+
+`nali tui` opens a full-screen interactive interface for querying IP addresses, IPv6 addresses and domain names one after another. You can also paste a whole log line (for example the output of `nslookup`/`dig` or a line of an access log) and the interface picks out the IP addresses and domain names it contains. Every detected entry shows the results of all selected databases at once.
+
+```
+$ nali tui
+```
+
+The header shows the version on the left and the state of each database on the right: `✓` means the database file is in place and `✗` means the file is missing (a hint is then shown below the header, suggesting to run `nali update` first). The result area is in the middle, the input line and the key hints are at the bottom. Queries show progress without blocking the input line; results are grouped as "query line → each detected entry → each database's answer", and the last 200 queries are kept.
+
+The screen looks roughly like this (results are placeholders; IP entries only match the IP databases, the CDN database only applies to domain names):
+
+```
+$ nali tui
+nali v0.0.0             IPv4 czdb ✓  IPv6 zxipv6wry ✓  CDN cdn ✓
+
+1. 1.2.3.4
+   1.2.3.4  IPv4
+     czdb       [IPv4 result]
+2. 240e::1
+   240e::1  IPv6
+     zxipv6wry  [IPv6 result]
+3. www.example.com
+   www.example.com  Domain
+     cdn        [domain CDN result]
+
+> 输入 IP / IPv6 / 域名，或粘贴任意一行日志，enter 查询
+enter 查询 · tab 切换 · ↑↓ 历史/滚动 · ? 帮助 · esc 关闭/退出
+```
+
+Queries are executed serially: one query runs while the others wait in the queue. A running block shows `查询中…`, a queued block shows `排队中…`, and a spinner with `查询中 N` (the number of queued plus running queries) is shown in front of the key hints at the bottom.
+
+| Key | Action |
+| --- | --- |
+| `enter` | Submit the query (while the input line has focus) |
+| `tab` / `shift+tab` | Switch focus between the input line and the result area |
+| `↑` / `↓` | Browse query history when the input line has focus; scroll up and down when the result area has focus |
+| `pgup` / `pgdn` (or `ctrl+u` / `ctrl+d`) | Scroll the result area by a page |
+| `ctrl+l` | Clear the result area |
+| `?` | Show/hide the help when the input line is empty or the result area has focus |
+| `u` | Open the database update panel when the input line is empty or the result area has focus |
+| `esc` | Close the help first, then clear the input, then quit |
+| `ctrl+c` | Quit at any time |
+
+The databases must be ready before using the TUI, run `nali update` first (see [Update database](#update-database)). When a database fails to initialize (for example the Chunzhen CZDB decryption key is missing) the interface shows the error but stays open, and the other databases can still be queried.
+
+`nali tui` needs an interactive terminal. When stdin or stdout is redirected (pipes, CI, Docker and so on) it fails with an error and points you to `nali <IP>` or piping instead; use the pipeline described in [Use with any other program](#use-with-any-other-program) for batch queries.
+
+#### Update databases (TUI)
+
+There is no need to quit the interface and run `nali update`: press `u` in the TUI to update the databases and watch the progress of every database right there.
+
+1. Press `u` to open the database update panel. It starts in a confirmation state and lists the databases that will be updated (czdb, zxipv6wry, ip2region and cdn by default; the larger czdb-ipv6, ip2region-ipv6 and ipinfo databases are updated as well when they are selected or already downloaded, following the same rules as `nali update`).
+2. Press `enter` to start; every database gets a line of its own with its progress.
+3. Press `esc` to cancel while the update is running, and `esc` again to close the panel once it has finished. `ctrl+c` quits the program at any time (and cancels the update).
+
+```
+数据库更新
+
+czdb           [██████████░░░░░░]  63% 8.1 MB / 13.0 MB 3.2 MB/s 下载
+zxipv6wry      [████████████████] 100% 6.4 MB / 6.4 MB  3.1 MB/s 校验
+ip2region      [███████░░░░░░░░░]  45% 3.1 MB           1.8 MB/s 下载
+cdn            [████████████████] 100% 2.4 MB / 2.4 MB           已是最新版本
+ipinfo                                                           等待
+ip2region-ipv6                                                   未更新
+
+更新进行中 · esc 取消
+```
+
+From left to right every line shows the database name, a progress bar sized to the terminal width together with a percentage, the downloaded / total size (only the downloaded size when the server does not announce a total), the download speed, and the current stage. The stages are `下载` → `校验` → `写入` → `完成` / `失败` (download → verify → write → done / failed); a database that has not started yet shows `等待` without a progress bar, one that received no update by the end of the run shows `未更新`, and a cancelled one shows `已取消` (and is not counted as a success). A database that is already up to date is still downloaded in full and compared with the local content: when the content is identical the file is not rewritten and the line is marked `已是最新版本` (already up to date).
+
+The hint line at the bottom follows the state: `enter 开始更新 · esc 关闭` while confirming; when a query is still running, confirming first shows `等待当前查询完成… · esc 关闭` and the update starts once that query has finished; `更新进行中 · esc 取消` while running, `正在取消…` after a cancellation, and `esc 关闭` once it has finished. A finished run also shows a summary line `成功 N 个 / 失败 M 个`, followed by ` · 已取消 C 个` for the databases cancelled in this run, by ` · 跳过 K 个` for those that never reported an event, and by "，失败原因见上面的错误" when something failed.
+
+When a database fails, the reason is shown on its own line and the other databases keep updating; after the update the database states in the header (`✓` / `✗`) are refreshed according to the result. The update runs in the background, so the interface never freezes and `ctrl+c` still quits at any time; new queries cannot be submitted while it runs (the input line stays editable and the hint line says the update is running), and querying works again as soon as it finishes. Neither cancelling nor a failure damages the existing databases: the partially downloaded data is not written and the old database is left untouched. The arguments and meaning of the `nali update` command are unchanged, but in a terminal it now shows a progress panel as well (see [Update database](#update-database)).
+
+Both share the same progress data: the `nali update` panel has exactly the columns and stages of the one shown here; the difference is that the TUI can also cancel the update and lets you query again as soon as it has finished.
 
 ### Use with `dig`
 
@@ -337,6 +415,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   info        get the necessary information of nali
+  tui         start an interactive terminal UI (TUI)
   update      update ip databases and cdn, update nali to latest version if -v
 
 Flags:
@@ -363,6 +442,18 @@ $ nali update
 ```
 
 The czdb download URL contains a `{key}` placeholder that is replaced with the `CZDB_DOWNLOAD_KEY` environment variable; when the `download-urls` in the config already contain the dedicated download link provided by Chunzhen, that variable is not needed (see [Use the Chunzhen CZDB database](#use-the-chunzhen-czdb-database)).
+
+The log lines above are what you get when the output is redirected (`nali update > log`, a pipe, CI); no control characters are emitted then. In a terminal `nali update` draws a panel that is redrawn in place instead: one line per database, with the same columns as the TUI update panel, the reason of a failing database indented below its own line, and a summary line at the end.
+
+```
+czdb      [██████████████░░░░░░]  70% 9.1 MB / 13.0 MB 3.2 MB/s 下载
+zxipv6wry [████████████████████] 100% 6.4 MB / 6.4 MB  3.1 MB/s 校验
+ip2region [░░░░░░░░░░░░░░░░░░░░]  --% 3.1 MB           1.8 MB/s 下载
+cdn       [████████████████████] 100% 2.4 MB / 2.4 MB           已是最新版本
+成功 4 个 / 失败 0 个
+```
+
+From left to right every line shows the database name, a 20 cell progress bar with a percentage, the downloaded / total size (only the downloaded size when the server does not announce a total, with `--%` as the percentage), the download speed, and the stage (`下载` → `校验` → `写入` → `完成` / `失败` / `已是最新版本`, that is download → verify → write → done / failed / already up to date). The summary line is `成功 N 个 / 失败 M 个`, followed by ` · 已取消 C 个` when databases were cancelled and ` · 跳过 K 个` when a database received no update event in this run. The panel is written to stderr only, so stdout stays clean; a narrow terminal drops the progress bar first, then the speed and finally the byte column instead of wrapping.
 
 Update specific databases (comma separated, aliases allowed); these are always updated:
 
